@@ -1,0 +1,5 @@
+{
+  "name": "rtk",
+  "version": "0.44.2",
+  "description": "Rust Token Killer - token-optimized CLI proxy (60-90% savings on dev operations)"
+}
