@@ -79,7 +79,9 @@ Every entry it does not name is fresh. **Do not read fresh entries** — that is
 
 4. **Record.** Append a dated line to `log.md` for every entry created, updated, or deprecated. Ensure each unit `index.md` links every entry it owns.
 
-5. **Report** in the shape below.
+5. **Run the conformance check in FORMAT.md** — all four passes — and repair every line it prints. A malformed entry is invisible to the freshness pass, so a violation left in place fails silently toward false trust.
+
+6. **Report** in the shape below.
 
 ## Capture
 
@@ -90,7 +92,7 @@ The write-back path: an agent derived a mechanic the bundle lacked and records i
 3. Extend the existing entry if one covers this mechanic; otherwise create one.
 4. Write it per FORMAT.md as `status: draft`, citing only files actually read, each with `digest` and `revision`.
 5. Link it from the unit `index.md`; append a `**Creation**` or `**Update**` line to `log.md`.
-6. Confirm in one line, naming it as draft until verified. Done when the entry exists, every cited file carries a digest, every pointer target is among those files, and the unit index links it.
+6. Confirm in one line, naming it as draft until verified. Done when the entry exists, every cited file carries a digest, every pointer target is among those files, the unit index links it, and the conformance check in FORMAT.md — run over the new entry — prints nothing.
 
 ## Verify
 
@@ -104,11 +106,11 @@ Outcomes per entry:
 - any claim is wrong → correct it, `status: draft` until re-verified, and report it.
 - a pointer names a symbol grep cannot find → repoint it or drop it.
 
-Done when every entry in scope has been promoted, corrected, or demoted — none left at its prior status by default.
+Done when every entry in scope has been promoted, corrected, or demoted — none left at its prior status by default — and, if any entry was edited, the conformance check in FORMAT.md prints nothing.
 
 ## Rebuild
 
-Re-derive from source, replacing entry bodies. Recompute all digests, set `status: draft`, clear `verified`, keep `log.md` history intact, and append an `**Update**` line per entry. Rebuilt text is new text: it earns `stable` the same way any other new text does, by surviving a verify pass. Use rebuild when drift has outrun repair — not as a routine refresh.
+Re-derive from source, replacing entry bodies. Recompute all digests, set `status: draft`, clear `verified`, keep `log.md` history intact, and append an `**Update**` line per entry. Run the conformance check in FORMAT.md before finishing. Rebuilt text is new text: it earns `stable` the same way any other new text does, by surviving a verify pass. Use rebuild when drift has outrun repair — not as a routine refresh.
 
 `rebuild <unit>` covers that unit only and leaves `crosscutting/` alone, since a crosscutting entry answers to several units at once. `rebuild` with no argument covers every unit *and* `crosscutting/`.
 
@@ -126,6 +128,7 @@ Freshness pass plus coverage sweep, reported and nothing written — not even `s
 - New entries are born `draft`. Only a verify pass makes one `stable`.
 - An entry earns its place when re-deriving it would cost more reading than the entry itself. Otherwise leave it out.
 - Repair edits the sections the change touched and nothing else. Churn destroys the bundle's review value.
+- No run that wrote to the bundle ends before the conformance check in FORMAT.md runs silent. Its passes catch what fails toward false trust: malformed frontmatter, source lines the freshness pass cannot see, unwatched pointer targets, renamed symbols.
 
 ## Report
 

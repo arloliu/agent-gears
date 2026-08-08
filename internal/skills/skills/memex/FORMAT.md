@@ -179,14 +179,37 @@ declined: []
 
 ## Conformance check
 
-Run before finishing any run that wrote to the bundle. It prints every source line that does not match the canonical shape — the lines the freshness pass would silently skip:
+Run before finishing any run that wrote to the bundle — every branch's done condition includes it. Four scripted passes, then a short read; each pass prints only violations, so silence means clean.
+
+First, frontmatter. Every non-reserved `.md` must open with a frontmatter block and carry the fields the trust ladder reads — a missing `status` silently reads as `stable`, which is false trust in text nobody vouched for:
+
+```bash
+find "$BUNDLE" -name '*.md' ! -name index.md ! -name log.md | while read -r f; do
+  [ "$(head -1 "$f")" = '---' ] && tail -n +2 "$f" | grep -q '^---$' \
+    || { echo "NOFM   $f  frontmatter must open at line 1 and close with ---"; continue; }
+  fm=$(sed -n '2,/^---$/p' "$f" | sed '$d')
+  printf '%s\n' "$fm" | grep -q '^type: .' || echo "NOTYPE $f  missing or empty type"
+  case "$(printf '%s\n' "$fm" | sed -n 's/^type: //p')" in
+    'Bundle Conventions'|Unit) continue ;;
+  esac
+  printf '%s\n' "$fm" | grep -q '^title: .'       || echo "NOKEY  $f  missing title"
+  printf '%s\n' "$fm" | grep -q '^description: .' || echo "NOKEY  $f  missing description"
+  printf '%s\n' "$fm" | grep -Eq '^status: (draft|stable|deprecated)$' \
+    || echo "BADST  $f  status must be draft, stable, or deprecated"
+  printf '%s\n' "$fm" | grep -Eq '^generated: \{by: [^,]+, at: [^}]+\}$' \
+    || echo "NOGEN  $f  generated must be {by: <actor>, at: <ISO-8601>}"
+  printf '%s\n' "$fm" | grep -q '{resource: ' || echo "NOSRC  $f  cites no sources"
+done
+```
+
+Then source-line shape. This pass prints every source line that does not match the canonical shape — the lines the freshness pass would silently skip:
 
 ```bash
 grep -rn 'resource:' --include='*.md' "$BUNDLE" \
 | grep -v '{resource: [^,]*, digest: sha256:[0-9a-f]\{16\}, revision: [^,}]*}'
 ```
 
-Silence means clean. Any line it prints must be repaired before the run ends, because that entry is currently unfalsifiable.
+Any line it prints must be repaired before the run ends, because that entry is currently unfalsifiable.
 
 Then check that every file an entry points at is also a file it cites — an uncited pointer target is unwatched, so a claim resting on it rots while the entry still reads as fresh:
 
@@ -216,4 +239,4 @@ done
 
 A `NOSYM` line means the symbol was renamed or removed: repoint it, or the entry is describing code that no longer exists under that name.
 
-Then confirm by reading: every non-reserved `.md` parses as YAML frontmatter plus body and carries a non-empty `type`; every unit index lists the entries it owns; every unit directory mirrors its repo path.
+Then confirm by reading what the scripts cannot: every unit index lists the entries it owns, and every unit directory mirrors its repo path.
